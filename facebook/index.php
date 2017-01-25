@@ -12,7 +12,6 @@ $fb = new Facebook\Facebook([
 $helper = $fb->getRedirectLoginHelper();
 
 $app = new Slim\App();
-//$router = $app->router;
 
 $app->get('/login', function ($request, $response, $args) use ($helper) {
     $permissions = ['user_posts']; // optional
@@ -38,7 +37,9 @@ $app->get('/callback', function ($request, $response, $args) use ($app, $helper)
     return $response->withRedirect('/list', 301);
 });
 
-$app->get('/list', function ($request, $response, $args) use ($fb, $helper) {
+$app->get('/list/{groupid}', function ($request, $response, $args) use ($fb, $helper) {
+
+    $groupid = $request->getAttribute('groupid') ?: "none";
     $token = $_SESSION['facebook_access_token'];
 
     if (empty($token)) {
@@ -49,7 +50,7 @@ $app->get('/list', function ($request, $response, $args) use ($fb, $helper) {
     $fb->setDefaultAccessToken($token);
     try
     {
-        $resp = $fb->get('/me/posts');
+        $resp = $fb->get($groupid . '/feed');
         $wholeResponse = json_encode((array)$resp);
         $response->write($wholeResponse);
         return $response;

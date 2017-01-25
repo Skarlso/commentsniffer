@@ -1,6 +1,7 @@
 {
   "require" : {
     "facebook/graph-sdk": "~5.0",
-    "slim/slim": "^3.0"
+    "slim/slim": "^3.0",
+    "symfony/yaml": "*"
   }
 }

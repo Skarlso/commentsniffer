@@ -1,8 +1,21 @@
 <?php
 session_start();
 require_once __DIR__ . '/vendor/autoload.php';
-$APP_ID = "<APP_ID>";
-$APP_SECRET = "<APP_SECRET>";
+require_once 'db_connector.php';
+
+use Symfony\Component\Yaml\Parser;
+
+$yaml = new Parser();
+
+$creds = $yaml->parse( file_get_contents( 'facebook_keys.yaml' ) );
+$APP_ID = $creds['app_id'];
+$APP_SECRET = $creds['app_secret'];
+
+$db = new DBConnector();
+if (!file_exists('facebook.db'))
+{
+    $db->prepareDB();
+}
 
 $fb = new Facebook\Facebook([
   'app_id' => $APP_ID,
@@ -34,10 +47,10 @@ $app->get('/callback', function ($request, $response, $args) use ($app, $helper)
     if (isset($accessToken)) {
         $_SESSION['facebook_access_token'] = (string) $accessToken;
     }
-    return $response->withRedirect('/list', 301);
+    return $response->withRedirect('/list/none', 301);
 });
 
-$app->get('/list/{groupid}', function ($request, $response, $args) use ($fb, $helper) {
+$app->get('/list/{groupid}', function ($request, $response, $args) use ($fb, $helper, $db) {
 
     $groupid = $request->getAttribute('groupid') ?: "none";
     $token = $_SESSION['facebook_access_token'];
@@ -50,9 +63,24 @@ $app->get('/list/{groupid}', function ($request, $response, $args) use ($fb, $he
     $fb->setDefaultAccessToken($token);
     try
     {
+        $response->withHeader('Content-Type', 'text/html;charset=ISO-8859-2');
         $resp = $fb->get($groupid . '/feed');
-        $wholeResponse = json_encode((array)$resp);
-        $response->write($wholeResponse);
+        //$graphObj = $resp->getGraphEdge()->getPropertyAsArray("data");
+        $respEdge = $resp->getGraphEdge();
+        foreach($respEdge as $respNode)
+        {
+            $postid = $respNode['id'];
+            $response->write("Post Id: " . $postid . "</br>");
+            $comments = $fb->get($postid . '/comments');
+            $commentObject = $comments->getGraphEdge();
+            foreach($commentObject as $comment)
+            {
+                $db->insertComment($groupid, $postid, $comment['id'], $comment['message']);
+                $response->write("Comments: " . $comment  . "</br/>");
+            }
+        }
+        //$content = {};
+        //$content[]
         return $response;
     } catch(Facebook\Exceptions\FacebookResponseException $e) {
         $response->write($e->getMessage());

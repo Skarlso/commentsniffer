@@ -15,6 +15,11 @@ class DBConnector
         $this->db->exec('CREATE TABLE comments (groupid STRING, postid STRING, commentid STRING, comment STRING)');
     }
 
+    public function exists()
+    {
+        return file_exists('facebook.db');
+    }
+
     public function insertComment($groupid, $postid, $commentid, $comment)
     {
         $stmt = $this->db->prepare('INSERT INTO comments VALUES (:groupid, :postid, :commentid, :comment)');

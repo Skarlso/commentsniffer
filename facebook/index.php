@@ -12,7 +12,7 @@ $APP_ID = $creds['app_id'];
 $APP_SECRET = $creds['app_secret'];
 
 $db = new DBConnector();
-if (!file_exists('facebook.db'))
+if (!$db->exists())
 {
     $db->prepareDB();
 }
